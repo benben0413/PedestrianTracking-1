@@ -22,8 +22,15 @@ hog = cv2.HOGDescriptor()
 hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 count = 0
 pts = deque(maxlen=args["buffer"])
-#camera = cv2.VideoCapture(args["video"])
-camera = cv2.VideoCapture(0)
+
+# Si no se indica el video se graba con la cámara:
+if not args.get("video", False):
+	camera = cv2.VideoCapture(0)
+else:
+	camera = cv2.VideoCapture(args["video"])
+
+# Video preseteado:
+#camera = cv2.VideoCapture('VideoMachineLearning.MP4')
 
 # loop over the image paths
 while True:
