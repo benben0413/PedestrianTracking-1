@@ -31,9 +31,6 @@ if not args.get("video", False):
 else:
 	camera = cv2.VideoCapture(args["video"])
 
-# Video preseteado:
-#camera = cv2.VideoCapture('VideoMachineLearning.MP4')
-
 # loop over the image paths
 while True:
 	# grab the current frame
