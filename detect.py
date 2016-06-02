@@ -12,7 +12,7 @@ from collections import deque
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video",
-	help="path to the (optional) video file")
+	help="path to the video file")
 ap.add_argument("-b", "--buffer", type=int, default=64,
 	help="max buffer size")
 args = vars(ap.parse_args())
@@ -20,9 +20,19 @@ args = vars(ap.parse_args())
 # initialize the HOG descriptor/person detector
 hog = cv2.HOGDescriptor()
 hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
-count = 0
+
+# Counter que indica cuantos frames lleva el video.
+count = 0git
 pts = deque(maxlen=args["buffer"])
-camera = cv2.VideoCapture(args["video"])
+
+# Si no se indica el video se graba con la cámara:
+if not args.get("video", False):
+	camera = cv2.VideoCapture(0)
+else:
+	camera = cv2.VideoCapture(args["video"])
+
+# Video preseteado:
+#camera = cv2.VideoCapture('VideoMachineLearning.MP4')
 
 # loop over the image paths
 while True:
@@ -37,7 +47,7 @@ while True:
 
 	# detect people in the image
 	(rects, weights) = hog.detectMultiScale(image, winStride=(4, 4),
-		padding=(1, 1), scale=2.)
+		padding=(1, 1), scale=1.05)
 
 	# draw the original bounding boxes
 	for (x, y, w, h) in rects:
