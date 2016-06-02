@@ -27,15 +27,34 @@ if not args.get("video", False):
 else:
 	camera = cv2.VideoCapture(args["video"])
 
+# List of colors to identify pedestrians in the image:
+colors = []
+# Next color available.
+nextColor = 0
+
+# Reset the colors available.
+def resetColors():
+	global nextColor
+	nextColor = 0
+	colors.append((0, 255, 0))
+	colors.append((255, 0, 0))
+	colors.append((0, 0, 255))
+	colors.append((0, 0, 0))
+	colors.append((100, 100, 100))
+
+# Get the next available color:
+def getColor():
+	global nextColor
+	nextColor = nextColor + 1
+	if nextColor >= len(colors):
+		resetColors()
+	return colors[nextColor]
+
 
 # Define the codec and create VideoWriter object
 # fourcc = cv2.VideoWriter_fourcc(*args["codec"])
 out = cv2.VideoWriter('output.avi',-1, 20.0, (640,480))
 
-# loop over the image paths
-
-# Color del rectangulo que identifica una persona:
-rectangleColor = (0, 255, 0)
 
 # Loop over the frames over the video:
 while True:
@@ -56,11 +75,15 @@ while True:
 	rects = np.array([[x, y, x + w, y + h] for (x, y, w, h) in rects])
 	pick = non_max_suppression(rects, probs=None, overlapThresh=0.65)
 
+	# Reset the color available:
+	resetColors()
+
 	# draw the final bounding boxes
 	for (xA, yA, xB, yB) in pick:
+		rectangleColor = getColor()
 		cv2.rectangle(image, (xA, yA), (xB, yB), rectangleColor, 2)
 
-	print (count)
+	#print (count)
 
 	# write the flipped frame
 	if grabbed==True:
