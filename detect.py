@@ -77,11 +77,10 @@ while True:
 
 	# Reset the color available:
 	resetColors()
-	print("Colors: ")
+
 	# draw the final bounding boxes
 	for (xA, yA, xB, yB) in pick:
 		rectangleColor = getColor()
-		print(rectangleColor)
 		cv2.rectangle(image, (xA, yA), (xB, yB), rectangleColor, 2)
 
 	#print (count)
