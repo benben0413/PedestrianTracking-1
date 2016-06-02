@@ -50,6 +50,20 @@ def getColor():
 		resetColors()
 	return colors[nextColor]
 
+# Class pedestrian. A pedestrian has position and color.
+class Pedestrian:
+
+	def __init__(self, x, y, color):
+		self.x = x
+		self.y = y
+		self.color = color
+
+	def getColor(self):
+		return self.color
+
+	def getPosition(self):
+		return self.position
+
 
 
 # Define the codec and create VideoWriter object
@@ -81,7 +95,7 @@ while True:
 
 	# draw the final bounding boxes
 	for (xA, yA, xB, yB) in pick:
-		rectangleColor = getColor()2cla
+		rectangleColor = getColor()
 		cv2.rectangle(image, (xA, yA), (xB, yB), rectangleColor, 2)
 
 	#print (count)
