@@ -54,16 +54,23 @@ def getColor():
 # Class pedestrian. A pedestrian has position and color.
 class Pedestrian:
 	# Constructor:
-	def __init__(self, x, y, color):
+	def __init__(self, x, y, color, initFrame):
 		self.x = x
 		self.y = y
 		self.color = color
+		self.frame = initFrame
 	# Returns the color of the pedestrian:
 	def getColor(self):
 		return self.color
 	# Returns the position of the pedestrian:
 	def getPosition(self):
 		return (self.x, self.y)
+	# Returns the last frame when the pedestrian was sawed:
+	def getFrame(self):
+		return self.frame
+	# Refresh the last frame when the pedestrian was sawed:
+	def refreshFrame(currentFrame):
+		self.frame = currentFrame
 
 # Pedestrians recognized by the model:
 pedestrians = []
@@ -79,6 +86,32 @@ def checkSamePed(ped1, ped2):
 		return True
 	else:
 		return False
+
+# Checks if a pedestrian is in the list:
+def checkPedInList(ped1):
+	for ped2 in pedestrians:
+		if checkSamePed(ped1,ped2):
+			return (True, ped2)
+	return (False, None)
+
+# Adds a pedestrian ir he/she is not in the list:
+def addPedestrian(ped, currentFrame):
+	(check, ped2) = checkPedInList(ped)
+	if not check:
+		pedestrians.append(ped)
+	# If it is in the list we refresh his frame:
+	else:
+		ped2.refreshFrame(currentFrame)
+
+# Remove a pedestrian of the list if he/she is not appearing more in the video:
+def removeOldPed(currentFrame):
+	# threshold for delete a pedestrian from the list: measured in frames.
+	threshold = 20 #If the pedestrian does not appear in 20 frames is deleted from the list.
+	for ped in pedestrians:
+		lastFrameSawed = ped.getFrame()
+		df = np.abs(lastFrameSawed-currenFrame)
+		if df < threshold:
+			pedestrians.remove(ped)
 
 # getCentralPos returns the central point of a rectangle:
 def getCentralPos(rect):
