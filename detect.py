@@ -63,10 +63,22 @@ class Pedestrian:
 		return self.color
 	# Returns the position of the pedestrian:
 	def getPosition(self):
-		return self.position
+		return (self.x, self.y)
 
 # Pedestrians recognized by the model:
 pedestrians = []
+# Check if 2 pedestrians are the same probably by their positions:
+def checkSamePed(ped1, ped2):
+	# threshold in pixels. If theirs middle points are 20 pixels close or less.
+	threshold = 10
+	(x1, y1) = ped1.getPosition()
+	(x2, y2) = ped2.getPosition()
+	dx = np.abs(x2-x1)
+	dy = np.abs(y2-y1)
+	if (dx < 20) and (dy < 20):
+		return True
+	else:
+		return False
 
 # getCentralPos returns the central point of a rectangle:
 def getCentralPos(rect):
