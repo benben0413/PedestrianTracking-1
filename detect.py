@@ -27,11 +27,17 @@ if not args.get("video", False):
 else:
 	camera = cv2.VideoCapture(args["video"])
 
+
 # Define the codec and create VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
 out = cv2.VideoWriter('output.avi',fourcc, 20.0, (640,480))
 
 # loop over the image paths
+
+# Color del rectangulo que identifica una persona:
+rectangleColor = (0, 255, 0)
+
+# Loop over the frames over the video:
 while True:
 
 	# grab the current frame
@@ -39,15 +45,10 @@ while True:
 	# load the image and resize it to (1) reduce detection time
 	# and (2) improve detection accuracy
 	image = imutils.resize(frame, width=min(400, frame.shape[1]))
-	orig = image.copy()
 
 	# detect people in the image
 	(rects, weights) = hog.detectMultiScale(image, winStride=(4, 4),
 		padding=(8, 8), scale=1.05)
-
-	# draw the original bounding boxes
-	for (x, y, w, h) in rects:
-		cv2.rectangle(orig, (x, y), (x + w, y + h), (0, 0, 255), 2)
 
 	# apply non-maxima suppression to the bounding boxes using a
 	# fairly large overlap threshold to try to maintain overlapping
@@ -57,20 +58,14 @@ while True:
 
 	# draw the final bounding boxes
 	for (xA, yA, xB, yB) in pick:
-		cv2.rectangle(image, (xA, yA), (xB, yB), (0, 255, 0), 2)
+		cv2.rectangle(image, (xA, yA), (xB, yB), rectangleColor, 2)
 
-	# show some information on the number of bounding boxes
-	#filename = imagePath[imagePath.rfind("/") + 1:]
-	#print("[INFO] {}: {} original boxes, {} after suppression".format(
-	#	filename, len(rects), len(pick)))
 	print (count)
 
 	# write the flipped frame
-	out.write(frame) 
+	out.write(frame)
 
-	# show the output images
-	cv2.imwrite("Resultados/Before_NMS_"+str(count)+".jpg", orig)
-	cv2.imwrite("Resultados/After NMS"+str(count)+".jpg", image)
+	# show the output frame
 	cv2.imshow("Frame", image)
 	count += 1
 	key = cv2.waitKey(1) & 0xFF
