@@ -21,7 +21,7 @@ hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
 # Counter que indica cuantos frames lleva el video.
 count = 0
-# Si no se indica el video se graba con la cámara:
+# Si no se indica el video se graba con la camara:
 if not args.get("video", False):
 	camera = cv2.VideoCapture(0)
 else:
@@ -66,7 +66,7 @@ while True:
 	print (count)
 
 	# write the flipped frame
-    out.write(frame)
+	out.write(frame) 
 
 	# show the output images
 	cv2.imwrite("Resultados/Before_NMS_"+str(count)+".jpg", orig)
