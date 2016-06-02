@@ -22,7 +22,7 @@ hog = cv2.HOGDescriptor()
 hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
 # Counter que indica cuantos frames lleva el video.
-count = 0git
+count = 0
 pts = deque(maxlen=args["buffer"])
 
 # Si no se indica el video se graba con la cámara:
@@ -30,6 +30,10 @@ if not args.get("video", False):
 	camera = cv2.VideoCapture(0)
 else:
 	camera = cv2.VideoCapture(args["video"])
+
+# Define the codec and create VideoWriter object
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter('output.avi',fourcc, 20.0, (640,480))
 
 # loop over the image paths
 while True:
@@ -66,6 +70,9 @@ while True:
 	#	filename, len(rects), len(pick)))
 	print (count)
 
+	# write the flipped frame
+    out.write(frame) 
+
 	# show the output images
 	cv2.imwrite("Resultados/Before_NMS_"+str(count)+".jpg", orig)
 	cv2.imwrite("Resultados/After NMS"+str(count)+".jpg", image)
@@ -74,3 +81,7 @@ while True:
 	key = cv2.waitKey(1) & 0xFF
 	if key == ord("q"):
 		break
+
+# Release everything if job is finished
+camera.release()
+out.release()
