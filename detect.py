@@ -52,18 +52,25 @@ def getColor():
 
 # Class pedestrian. A pedestrian has position and color.
 class Pedestrian:
-
+	# Constructor:
 	def __init__(self, x, y, color):
 		self.x = x
 		self.y = y
 		self.color = color
-
+	# Returns the color of the pedestrian:
 	def getColor(self):
 		return self.color
-
+	# Returns the position of the pedestrian:
 	def getPosition(self):
 		return self.position
 
+# Pedestrians recognized by the model:
+pedestrians = []
+
+# getCentralPos returns the central point of a rectangle:
+def getCentralPos(rect):
+	for (x, y, w, h) in rect:
+		return ((x+w)/2, (y+h)/2)
 
 
 # Define the codec and create VideoWriter object
