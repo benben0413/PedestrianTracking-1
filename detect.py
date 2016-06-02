@@ -45,10 +45,11 @@ def resetColors():
 # Get the next available color:
 def getColor():
 	global nextColor
-	nextColor = nextColor + 1
 	if nextColor >= len(colors):
 		resetColors()
-	return colors[nextColor]
+	ret = colors[nextColor]
+	nextColor = nextColor + 1
+	return ret
 
 # Class pedestrian. A pedestrian has position and color.
 class Pedestrian:
