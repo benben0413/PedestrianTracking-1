@@ -29,8 +29,8 @@ else:
 
 
 # Define the codec and create VideoWriter object
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter('output.avi',fourcc, 20.0, (640,480))
+# fourcc = cv2.VideoWriter_fourcc(*args["codec"])
+out = cv2.VideoWriter('output.avi',-1, 20.0, (640,480))
 
 # loop over the image paths
 
@@ -63,7 +63,9 @@ while True:
 	print (count)
 
 	# write the flipped frame
-	out.write(frame)
+	if grabbed==True:
+		writeimage = cv2.flip(image,0)
+		out.write(writeimage)
 
 	# show the output frame
 	cv2.imshow("Frame", image)
