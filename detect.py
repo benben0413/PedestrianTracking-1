@@ -52,8 +52,8 @@ def getColor():
 
 
 # Define the codec and create VideoWriter object
-# fourcc = cv2.VideoWriter_fourcc(*args["codec"])
-out = cv2.VideoWriter('output.avi',-1, 20.0, (640,480))
+fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+out = cv2.VideoWriter('output.avi',fourcc, 60.0, (640,480))
 
 
 # Loop over the frames over the video:
@@ -63,7 +63,7 @@ while True:
 	(grabbed, frame) = camera.read()
 	# load the image and resize it to (1) reduce detection time
 	# and (2) improve detection accuracy
-	image = imutils.resize(frame, width=min(400, frame.shape[1]))
+	image = imutils.resize(frame, width=min(640, frame.shape[1]))
 
 	# detect people in the image
 	(rects, weights) = hog.detectMultiScale(image, winStride=(4, 4),
@@ -87,7 +87,7 @@ while True:
 
 	# write the flipped frame
 	if grabbed==True:
-		writeimage = cv2.flip(image,0)
+		writeimage = imutils.resize(image, width=640, height=480)
 		out.write(writeimage)
 
 	# show the output frame
