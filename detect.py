@@ -45,10 +45,78 @@ def resetColors():
 # Get the next available color:
 def getColor():
 	global nextColor
-	nextColor = nextColor + 1
 	if nextColor >= len(colors):
 		resetColors()
-	return colors[nextColor]
+	ret = colors[nextColor]
+	nextColor = nextColor + 1
+	return ret
+
+# Class pedestrian. A pedestrian has position and color.
+class Pedestrian:
+	# Constructor:
+	def __init__(self, x, y, color, initNumFrame):
+		self.x = x
+		self.y = y
+		self.color = color
+		self.frame = initNumFrame
+	# Returns the color of the pedestrian:
+	def getColor(self):
+		return self.color
+	# Returns the position of the pedestrian:
+	def getPosition(self):
+		return (self.x, self.y)
+	# Returns the last frame when the pedestrian was sawed:
+	def getNumFrame(self):
+		return self.frame
+	# Refresh the last frame when the pedestrian was sawed:
+	def refreshNumFrame(currentNumFrame):
+		self.frame = currentNumFrame
+
+# Pedestrians recognized by the model:
+pedestrians = []
+# Check if 2 pedestrians are the same probably by their positions:
+def checkSamePed(ped1, ped2):
+	# threshold in pixels. If theirs middle points are 20 pixels close or less.
+	threshold = 10
+	(x1, y1) = ped1.getPosition()
+	(x2, y2) = ped2.getPosition()
+	dx = np.abs(x2-x1)
+	dy = np.abs(y2-y1)
+	if (dx < 20) and (dy < 20):
+		return True
+	else:
+		return False
+
+# Checks if a pedestrian is in the list:
+def checkPedInList(ped1):
+	for ped2 in pedestrians:
+		if checkSamePed(ped1,ped2):
+			return (True, ped2)
+	return (False, None)
+
+# Adds a pedestrian ir he/she is not in the list:
+def addPedestrian(ped, currentNumFrame):
+	(check, ped2) = checkPedInList(ped)
+	if not check:
+		pedestrians.append(ped)
+	# If it is in the list we refresh his frame:
+	else:
+		ped2.refreshNumFrame(currentNumFrame)
+
+# Remove a pedestrian of the list if he/she is not appearing more in the video:
+def removeOldPed(currentNumFrame):
+	# threshold for delete a pedestrian from the list: measured in frames.
+	threshold = 20 #If the pedestrian does not appear in 20 frames is deleted from the list.
+	for ped in pedestrians:
+		lastNumFrameSawed = ped.getNumFrame()
+		df = np.abs(lastNumFrameSawed-currenNumFrame)
+		if df < threshold:
+			pedestrians.remove(ped)
+
+# getCentralPos returns the central point of a rectangle:
+def getCentralPos(rect):
+	for (x, y, w, h) in rect:
+		return ((x+w)/2, (y+h)/2)
 
 
 # Define the codec and create VideoWriter object
