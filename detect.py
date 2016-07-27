@@ -62,13 +62,17 @@ class Pedestrian:
 	# Returns the color of the pedestrian:
 	def getColor(self):
 		return self.color
+	# Set the current position of the pedestrian:
+	def setPosition(self, x, y):
+		self.x = x
+		self.y = y
 	# Returns the position of the pedestrian:
 	def getPosition(self):
 		return (self.x, self.y)
-	# Returns the last frame when the pedestrian was sawed:
+	# Returns the last frame when the pedestrian was seen:
 	def getNumFrame(self):
 		return self.frame
-	# Refresh the last frame when the pedestrian was sawed:
+	# Refresh the last frame when the pedestrian was seen:
 	def refreshNumFrame(currentNumFrame):
 		self.frame = currentNumFrame
 
@@ -87,21 +91,23 @@ def checkSamePed(ped1, ped2):
 	else:
 		return False
 
-# Checks if a pedestrian is in the list:
+# Checks if a pedestrian is in the list: Returns a boolean and the
+# pedestrian in the list. None if the pedestrian isn't in the list.
 def checkPedInList(ped1):
 	for ped2 in pedestrians:
 		if checkSamePed(ped1,ped2):
 			return (True, ped2)
 	return (False, None)
 
-# Adds a pedestrian ir he/she is not in the list:
+# Adds a pedestrian if he/she is not in the list:
 def addPedestrian(ped, currentNumFrame):
 	(check, ped2) = checkPedInList(ped)
 	if not check:
 		pedestrians.append(ped)
-	# If it is in the list we refresh his frame:
+	# If it is in the list we refresh his frame and position:
 	else:
 		ped2.refreshNumFrame(currentNumFrame)
+		#ped2.setPosition()
 
 # Remove a pedestrian of the list if he/she is not appearing more in the video:
 def removeOldPed(currentNumFrame):
