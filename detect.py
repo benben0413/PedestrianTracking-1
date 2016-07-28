@@ -21,6 +21,7 @@ hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
 # Counter que indica cuantos frames lleva el video.
 count = 0
+
 # Si no se indica el video se graba con la camara:
 if not args.get("video", False):
 	camera = cv2.VideoCapture(0)
@@ -28,28 +29,52 @@ else:
 	camera = cv2.VideoCapture(args["video"])
 
 # List of colors to identify pedestrians in the image:
-colors = []
-# Next color available.
-nextColor = 0
+colors = [(0, 255, 0),
+		  (255, 0, 0),
+		  (0, 0, 255),
+		  (0, 0, 0),
+		  (100, 100, 100)]
+# True if it is available that color, false otherwise
+available = [True,
+			 True,
+			 True,
+			 True,
+			 True]
 
-# Reset the colors available.
-def resetColors():
-	global nextColor
-	nextColor = 0
-	colors.append((0, 255, 0))
-	colors.append((255, 0, 0))
-	colors.append((0, 0, 255))
-	colors.append((0, 0, 0))
-	colors.append((100, 100, 100))
-
-# Get the next available color:
+# Returns the first available color.
 def getColor():
-	global nextColor
-	if nextColor >= len(colors):
-		resetColors()
-	ret = colors[nextColor]
-	nextColor = nextColor + 1
-	return ret
+	for (i, av) in enumerate(available):
+		if av:
+			return colors[i]
+	return None
+
+def setAvailable(color):
+	global available
+	for (i, cl) in enumerate(colors):
+		if (cl == color):
+			available[i] = True
+
+# # Next color available.
+# nextColor = 0
+#
+# # Reset the colors available.
+# def resetColors():
+# 	global nextColor
+# 	nextColor = 0
+# 	colors.append((0, 255, 0))
+# 	colors.append((255, 0, 0))
+# 	colors.append((0, 0, 255))
+# 	colors.append((0, 0, 0))
+# 	colors.append((100, 100, 100))
+#
+# # Get the next available color:
+# def getColor():
+# 	global nextColor
+# 	if nextColor >= len(colors):
+# 		resetColors()
+# 	ret = colors[nextColor]
+# 	nextColor = nextColor + 1
+# 	return ret
 
 # Class pedestrian. A pedestrian has position and color.
 class Pedestrian:
@@ -58,6 +83,10 @@ class Pedestrian:
 		self.x = x
 		self.y = y
 		self.color = color
+		# Set available false
+		for (i, cl) in enumerate(colors):
+			if (color==cl):
+				available[i] = False
 		self.frame = initNumFrame
 	# Returns the color of the pedestrian:
 	def getColor(self):
@@ -73,7 +102,7 @@ class Pedestrian:
 	def getNumFrame(self):
 		return self.frame
 	# Refresh the last frame when the pedestrian was seen:
-	def refreshNumFrame(currentNumFrame):
+	def refreshNumFrame(self, currentNumFrame):
 		self.frame = currentNumFrame
 
 # Pedestrians recognized by the model:
@@ -100,29 +129,40 @@ def checkPedInList(ped1):
 	return (False, None)
 
 # Adds a pedestrian if he/she is not in the list:
+# If he is in the list is returned the old pedestrian with his color.
+# If he is not in the list is returned himself.
 def addPedestrian(ped, currentNumFrame):
+	global pedestrians
 	(check, ped2) = checkPedInList(ped)
 	if not check:
 		pedestrians.append(ped)
-	# If it is in the list we refresh his frame and position:
+		return ped
+	# If it is in the list we refresh his frame and position and set available
+	# the color of ped.
 	else:
 		ped2.refreshNumFrame(currentNumFrame)
-		#ped2.setPosition()
+		(x, y) = ped.getPosition()
+		ped2.setPosition(x, y)
+		# Set available the color:
+		setAvailable(ped.getColor())
+		return ped2
 
 # Remove a pedestrian of the list if he/she is not appearing more in the video:
 def removeOldPed(currentNumFrame):
+	global pedestrians
 	# threshold for delete a pedestrian from the list: measured in frames.
 	threshold = 20 #If the pedestrian does not appear in 20 frames is deleted from the list.
 	for ped in pedestrians:
 		lastNumFrameSawed = ped.getNumFrame()
-		df = np.abs(lastNumFrameSawed-currenNumFrame)
-		if df < threshold:
+		df = np.abs(lastNumFrameSawed-currentNumFrame)
+		if df > threshold:
+			# Set available his color
+			setAvailable(ped.getColor())
 			pedestrians.remove(ped)
 
 # getCentralPos returns the central point of a rectangle:
-def getCentralPos(rect):
-	for (x, y, w, h) in rect:
-		return ((x+w)/2, (y+h)/2)
+def getCentralPos(xA,yA,xB,yB):
+	return (np.abs(xA-xB), np.abs(yA-yB))
 
 
 # Define the codec and create VideoWriter object
@@ -149,15 +189,19 @@ while True:
 	rects = np.array([[x, y, x + w, y + h] for (x, y, w, h) in rects])
 	pick = non_max_suppression(rects, probs=None, overlapThresh=0.65)
 
-	# Reset the color available:
-	resetColors()
-
 	# draw the final bounding boxes
 	for (xA, yA, xB, yB) in pick:
-		rectangleColor = getColor()
+		# Create a pedestrian:
+		(x,y) = getCentralPos(xA,yA,xB,yB)
+		color = getColor()
+		ped = Pedestrian(x, y, color, count)
+		# Add the pedestrian or check if he is in the list:
+		ped2 = addPedestrian(ped, count)
+		# Remove pedestrians that does not appear more
+		removeOldPed(count)
+		rectangleColor = ped2.getColor()
+		
 		cv2.rectangle(image, (xA, yA), (xB, yB), rectangleColor, 2)
-
-	#print (count)
 
 	# write the flipped frame
 	if grabbed==True:
