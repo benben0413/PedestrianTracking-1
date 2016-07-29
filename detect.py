@@ -8,6 +8,7 @@ import argparse
 import imutils
 import cv2
 import time
+import math
 from collections import deque
 
 # construct the argument parse and parse the arguments
@@ -86,25 +87,44 @@ def setNotAvailable(color):
 # Class pedestrian. A pedestrian has position and color.
 class Pedestrian:
 	# Constructor:
-	def __init__(self, x, y, color, initNumFrame):
+	def __init__(self, x, y, color, initNumFrame, xA, yA, xB, yB):
 		self.x = x
 		self.y = y
+		self.xAux = x
+		self.yAux = y
 		self.color = color
 		# Set available false
 		setNotAvailable(color)
 		self.frame = initNumFrame
 		self.vx = 0
 		self.vy = 0
+		self.xA = xA
+		self.yA = yA
+		self.xB = xB
+		self.yB = yB
+
 	# Returns the color of the pedestrian:
 	def getColor(self):
 		return self.color
 	# Set the current position of the pedestrian:
 	def setPosition(self, x, y):
+		self.xA += (x - self.x)
+		self.xB += (x - self.x)
+		self.yA += (y - self.y)
+		self.yB += (y - self.y)
 		self.x = x
 		self.y = y
+		self.vx = np.sign(x - self.xAux) * 0.1
+		self.vy = np.sign(y - self.yAux) * 0.1
+		self.xAux = x
+		self.yAux = y
 	# Returns the position of the pedestrian:
 	def getPosition(self):
 		return (self.x, self.y)
+	def getFirstPoint(self):
+		return (int(self.xA), int(self.yA))
+	def getSecondPoint(self):
+		return (int(self.xB), int(self.yB))
 	# Returns the last frame when the pedestrian was seen:
 	def getNumFrame(self):
 		return self.frame
@@ -116,6 +136,10 @@ class Pedestrian:
 		return (self.x, self.y)
 	# Set new Pedestrian's state.
 	def setState(self, x, y, vx, vy):
+		self.xA += (x - self.x)
+		self.xB += (x - self.x)
+		self.yA += (y - self.y)
+		self.yB += (y - self.y)
 		self.x = x
 		self.y = y
 		self.vx = vx
@@ -181,29 +205,46 @@ def removeOldPed(currentNumFrame):
 def getCentralPos(xA,yA,xB,yB):
 	return ((xA+xB)/2, (yA+yB)/2)
 
+# estimate pedestrian location with kalmann filter
+def setPedestrianNewLocation():
+	global pedestrians
+	# change state in every pedestrian
+	for ped in pedestrians:
+		(x, y) = ped.getPosition()
+		(vx, vy) = ped.getVelocity()
+		(x2, vx2) = KalmannFilter(0, np.array([x,vx]))
+		(y2, vy2) = KalmannFilter(0, np.array([y,vy]))
+		ped.setState(x2[0], y2[0], vx2[0], vy2[0])
+
+def drawNotShownPedestrian(image, count):
+	global pedestrians
+
+	for ped in pedestrians:
+		if ped.getNumFrame() != count:
+			cv2.rectangle(image, ped.getFirstPoint(), ped.getSecondPoint(), ped.getColor(), 2)
 
 # Define the codec and create VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'MJPG')
 out = cv2.VideoWriter('output.avi',fourcc, 60.0, (640,480))
 
 #Global Variables
-dt = 0.1
+dt = 0.001
 A = np.array([[1, dt],[0, 1]])
 B = np.array([[dt**2/2.0],[dt]])
 C = np.array([[1, 0]])
 u = 1.5
 Q = np.array([[0],[0]])
 Pedestrian_estimate = Q
-PedestrianAccel_noise_mag = 0.05
+PedestrianAccel_noise_mag = 0.005
 Our_noise_mag = 10
 Ez = Our_noise_mag**2
 Ex = PedestrianAccel_noise_mag**2 * np.array([[(dt**4)/4, (dt**3)/2], [(dt**3)/2, dt**2]])
 P = Ex
 
-#Kalmann filter frame_loc = [x, y], old_frame = obj;
+#Kalmann filter frame_loc = x, state
 def KalmannFilter(frame_loc, state):
-    global Pedestrian_estimate, P
-    Pedestrian_estimate = np.dot(A,Pedestrian_estimate) + B * u
+    global P
+    Pedestrian_estimate = np.dot(A,state) + B * u
     #Predict next covariance
     P = np.dot(np.dot(A, P), np.transpose(A)) + Ex
     #Kalman Gain
@@ -215,6 +256,7 @@ def KalmannFilter(frame_loc, state):
 
 # Loop over the frames over the video:
 aux = 0
+firstStep = True
 while True:
 
 	# grab the current frame
@@ -234,12 +276,13 @@ while True:
 	rects = np.array([[x, y, x + w, y + h] for (x, y, w, h) in rects])
 	pick = non_max_suppression(rects, probs=None, overlapThresh=0.65)
 
+	setPedestrianNewLocation()
 	# draw the final bounding boxes
 	for (xA, yA, xB, yB) in pick:
 		# Create a pedestrian:
 		(x,y) = getCentralPos(xA,yA,xB,yB)
 		color = getColor()
-		ped = Pedestrian(x, y, color, count)
+		ped = Pedestrian(x, y, color, count, xA, yA, xB, yB)
 		# Add the pedestrian or check if he is in the list:
 		ped2 = addPedestrian(ped, count)
 		# Remove pedestrians that does not appear more
@@ -253,6 +296,8 @@ while True:
 		cv2.rectangle(image, (xA, yA), (xB, yB), rectangleColor, 2)
 
 	print("------")
+
+	drawNotShownPedestrian(image, count)
 
 	# write the flipped frame
 	if grabbed==True:
