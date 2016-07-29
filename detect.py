@@ -182,54 +182,51 @@ while True:
 	# grab the current frame
 	(grabbed, frame) = camera.read()
 
-	aux = aux + 1
-	if (aux%5) == 0:
+	# load the image and resize it to (1) reduce detection time
+	# and (2) improve detection accuracy
+	image = imutils.resize(frame, width=min(640, frame.shape[1]))
 
-		# load the image and resize it to (1) reduce detection time
-		# and (2) improve detection accuracy
-		image = imutils.resize(frame, width=min(640, frame.shape[1]))
+	# detect people in the image
+	(rects, weights) = hog.detectMultiScale(image, winStride=(4, 4),
+	padding=(8, 8), scale=1.05)
 
-		# detect people in the image
-		(rects, weights) = hog.detectMultiScale(image, winStride=(4, 4),
-			padding=(8, 8), scale=1.05)
+	# apply non-maxima suppression to the bounding boxes using a
+	# fairly large overlap threshold to try to maintain overlapping
+	# boxes that are still people
+	rects = np.array([[x, y, x + w, y + h] for (x, y, w, h) in rects])
+	pick = non_max_suppression(rects, probs=None, overlapThresh=0.65)
 
-		# apply non-maxima suppression to the bounding boxes using a
-		# fairly large overlap threshold to try to maintain overlapping
-		# boxes that are still people
-		rects = np.array([[x, y, x + w, y + h] for (x, y, w, h) in rects])
-		pick = non_max_suppression(rects, probs=None, overlapThresh=0.65)
+	# draw the final bounding boxes
+	for (xA, yA, xB, yB) in pick:
+		# Create a pedestrian:
+		(x,y) = getCentralPos(xA,yA,xB,yB)
+		color = getColor()
+		ped = Pedestrian(x, y, color, count)
+		# Add the pedestrian or check if he is in the list:
+		ped2 = addPedestrian(ped, count)
+		# Remove pedestrians that does not appear more
+		removeOldPed(count)
+		rectangleColor = ped2.getColor()
 
-		# draw the final bounding boxes
-		for (xA, yA, xB, yB) in pick:
-			# Create a pedestrian:
-			(x,y) = getCentralPos(xA,yA,xB,yB)
-			color = getColor()
-			ped = Pedestrian(x, y, color, count)
-			# Add the pedestrian or check if he is in the list:
-			ped2 = addPedestrian(ped, count)
-			# Remove pedestrians that does not appear more
-			removeOldPed(count)
-			rectangleColor = ped2.getColor()
+		print(ped.getColor(), ped.getPosition())
+		print(ped2.getColor(), ped.getPosition())
+		print("**")
 
-			print(ped.getColor(), ped.getPosition())
-			print(ped2.getColor(), ped.getPosition())
-			print("**")
+		cv2.rectangle(image, (xA, yA), (xB, yB), rectangleColor, 2)
 
-			cv2.rectangle(image, (xA, yA), (xB, yB), rectangleColor, 2)
+	print("------")
 
-		print("------")
-
-		# write the flipped frame
-		if grabbed==True:
-			writeimage = imutils.resize(image, width=640, height=480)
-			out.write(writeimage)
-
-		# show the output frame
-		cv2.imshow("Frame", image)
-		count += 1
-		key = cv2.waitKey(1) & 0xFF
-		if key == ord("q"):
-			break
+	# write the flipped frame
+	if grabbed==True:
+		writeimage = imutils.resize(image, width=640, height=480)
+		out.write(writeimage)
+		
+	# show the output frame
+	cv2.imshow("Frame", image)
+	count += 1
+	key = cv2.waitKey(1) & 0xFF
+	if key == ord("q"):
+		break
 
 # Release everything if job is finished
 camera.release()
