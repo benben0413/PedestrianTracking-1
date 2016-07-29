@@ -3,6 +3,7 @@ from __future__ import print_function
 from imutils.object_detection import non_max_suppression
 from imutils import paths
 import numpy as np
+from numpy.linalg import inv
 import argparse
 import imutils
 import cv2
@@ -59,6 +60,8 @@ class Pedestrian:
 		self.y = y
 		self.color = color
 		self.frame = initNumFrame
+		self.vx = 0
+		self.vy = 0
 	# Returns the color of the pedestrian:
 	def getColor(self):
 		return self.color
@@ -71,6 +74,15 @@ class Pedestrian:
 	# Refresh the last frame when the pedestrian was sawed:
 	def refreshNumFrame(currentNumFrame):
 		self.frame = currentNumFrame
+	# Get Pedestrian's velocity
+ 	def getVelocity(self):
+		return (self.x, self.y)
+	# Set new Pedestrian's state.
+	def setState(self, x, y, vx, vy):
+		self.x = x
+		self.y = y
+		self.vx = vx
+		self.vy = vy
 
 # Pedestrians recognized by the model:
 pedestrians = []
@@ -123,6 +135,32 @@ def getCentralPos(rect):
 fourcc = cv2.VideoWriter_fourcc(*'MJPG')
 out = cv2.VideoWriter('output.avi',fourcc, 60.0, (640,480))
 
+#Global Variables
+dt = 0.1
+A = np.array([[1, dt],[0, 1]])
+B = np.array([[dt**2/2.0],[dt]])
+C = np.array([[1, 0]])
+u = 1.5
+Q = np.array([[0],[0]])
+Pedestrian_estimate = Q
+PedestrianAccel_noise_mag = 0.05
+Our_noise_mag = 10
+Ez = Our_noise_mag**2
+Ex = PedestrianAccel_noise_mag**2 * np.array([[(dt**4)/4, (dt**3)/2], [(dt**3)/2, dt**2]])
+P = Ex
+
+#Kalmann filter frame_loc = [x, y], old_frame = obj;
+def KalmannFilter(frame_loc, state):
+    global Pedestrian_estimate, P
+    Pedestrian_estimate = np.dot(A,Pedestrian_estimate) + B * u
+    #Predict next covariance
+    P = np.dot(np.dot(A, P), np.transpose(A)) + Ex
+    #Kalman Gain
+    K = np.dot(np.dot(P, np.transpose(C)), inv(np.dot(np.dot(C, P), np.transpose(C)) + Ez))
+    #Update the state estimate.
+    Pedestrian_estimate = Pedestrian_estimate + K * (frame_loc - np.dot(C,Pedestrian_estimate))
+    return Pedestrian_estimate
+
 
 # Loop over the frames over the video:
 while True:
@@ -147,9 +185,13 @@ while True:
 	resetColors()
 
 	# draw the final bounding boxes
-	for (xA, yA, xB, yB) in pick:
-		rectangleColor = getColor()
-		cv2.rectangle(image, (xA, yA), (xB, yB), rectangleColor, 2)
+	if count == 0:
+    	for (xA, yA, xB, yB) in pick:
+			rectangleColor = getColor()
+			caballero = Pedestrian((xA+xB)/2, (yA + yB)/2, rectangleColor, count)
+			addPedestrian(caballero)		
+			cv2.rectangle(image, (xA, yA), (xB, yB), rectangleColor, 2)
+	else:
 
 	#print (count)
 
